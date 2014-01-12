@@ -11,7 +11,7 @@ use Test::More;
 use File::Temp qw(tempdir);
 use Test::FakeSendmail;
 
-my $tests_per_sender = 8;
+my $tests_per_sender = 9;
 
 plan tests => 2 * (3 + $tests_per_sender*2);
 
@@ -79,6 +79,7 @@ EOF
 		};
 
 	    like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
+	    is $mails[0]->argv, '-t -oi -oem -fme';
 
 	SKIP: {
 		skip "No MIME::Parser available", 5

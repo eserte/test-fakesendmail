@@ -47,6 +47,11 @@ sub received {
     $self->_get_info('received');
 }
 
+sub argv {
+    my $self = shift;
+    $self->_get_info('argv');
+}
+
 sub content {
     my $self = shift;
     my $content_file = $self->content_file;

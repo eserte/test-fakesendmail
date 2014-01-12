@@ -92,6 +92,7 @@ my $now = strftime("%Y%m%d_%H%M%S.$$", gmtime);
 	or die "ERROR: Can't write to $now.info: $!";
     # XXX binmode?
     print $info_fh "received=" . strftime("%FT%TZ", gmtime) . "\n";
+    print $info_fh "argv=@orig_ARGV\n";
     close $info_fh
 	or die "ERROR: Failure while writing to $now.info: $!";
 }
