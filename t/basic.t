@@ -40,55 +40,61 @@ for my $mode ('env', 'fixed_dir') {
     like $info, qr{test-fake-sendmail\s+\d+\.\d+}, 'seen version';
 
     for my $sender ('direct_sendmail', 'MIME::Lite') {
-	my $tfsm = Test::FakeSendmail->new(defined $maildirectory ? (maildirectory => $maildirectory) : ());
-	isa_ok $tfsm, 'Test::FakeSendmail';
+    SKIP: {
+	    skip "MIME::Lite not available", $tests_per_sender
+		if ($sender eq 'MIME::Lite' && !eval { require MIME::Lite; 1 });
 
-	if ($sender eq 'direct_sendmail') {
-	    open my $fh, "|-", $fake_sendmail_path, "-t", "-oi", "-oem" or die $!;
-	    print $fh <<EOF;
+	    my $tfsm = Test::FakeSendmail->new(defined $maildirectory ? (maildirectory => $maildirectory) : ());
+	    isa_ok $tfsm, 'Test::FakeSendmail';
+
+
+	    if ($sender eq 'direct_sendmail') {
+		open my $fh, "|-", $fake_sendmail_path, "-t", "-oi", "-oem" or die $!;
+		print $fh <<EOF;
 From: me
 To: somebody
 Subject: Hello
 
 Body
 EOF
-	    close $fh or die $!;
-	} elsif ($sender eq 'MIME::Lite') {
-	    require MIME::Lite;
-	    my $msg = MIME::Lite->new
-		(
-		 From => 'me',
-		 To => 'somebody',
-		 Subject => 'Hello',
-		 Data => "Body\n",
-		);
-	    $msg->send('sendmail', "$fake_sendmail_path -t -oi -oem");
-	} else {
-	    die "No support for sender '$sender'";
+		close $fh or die $!;
+	    } elsif ($sender eq 'MIME::Lite') {
+		my $msg = MIME::Lite->new
+		    (
+		     From => 'me',
+		     To => 'somebody',
+		     Subject => 'Hello',
+		     Data => "Body\n",
+		    );
+		$msg->send('sendmail', "$fake_sendmail_path -t -oi -oem");
+	    } else {
+		die "No support for sender '$sender'";
+	    }
+
+	    my @mails = $tfsm->mails;
+	    is @mails, 1, "Got one mail through sender '$sender'"
+		or do {
+		    my $content = `"$fake_sendmail_path" --tfsm-queue`;
+		    diag $content;
+		};
+
+	    like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
+
+	SKIP: {
+		skip "No MIME::Parser available", 5
+		    if !eval { require MIME::Parser; 1 };
+		my $parser = MIME::Parser->new;
+		$parser->output_to_core(1);
+		my $mail = $parser->parse_open($mails[0]->content_file);
+		isa_ok $mail, 'MIME::Entity';
+		is _get_header($mail, 'From'), 'me';
+		is _get_header($mail, 'To'), 'somebody';
+		is _get_header($mail, 'Subject'), 'Hello';
+		is $mail->body_as_string, "Body\n";
+	    }
+
+	    $tfsm->clean;
 	}
-
-	my @mails = $tfsm->mails;
-	is @mails, 1, "Got one mail through sender '$sender'"
-	    or do {
-		my $content = `"$fake_sendmail_path" --tfsm-queue`;
-		diag $content;
-	    };
-
-	like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
-
-    SKIP: {
-	    skip "No MIME::Parser available", 5
-		if !eval { require MIME::Parser; 1 };
-	    my $parser = MIME::Parser->new;
-	    $parser->output_to_core(1);
-	    my $mail = $parser->parse_open($mails[0]->content_file);
-	    isa_ok $mail, 'MIME::Entity';
-	    is _get_header($mail, 'From'), 'me';
-	    is _get_header($mail, 'To'), 'somebody';
-	    is _get_header($mail, 'Subject'), 'Hello';
-	    is $mail->body_as_string, "Body\n";
-	}
-	$tfsm->clean;
     }
 }
 
