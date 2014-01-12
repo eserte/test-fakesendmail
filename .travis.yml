@@ -9,4 +9,4 @@ perl:
 before_install:
   - cpanm --quiet --notest MIME::Parser MIME::Lite
 before_script:
-  - cd t && ln -s ../xt/travis-ci.t travis-ci.t
+  - (cd t && ln -s ../xt/travis-ci.t travis-ci.t)

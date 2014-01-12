@@ -9,14 +9,18 @@ use strict;
 use Test::More 'no_plan';
 
 use Test::FakeSendmail;
-use MIME::Lite;
 use MIME::Parser;
 
-system("sudo", $^X, "-Mblib" "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->install");
+system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->install");
 die "Cannot install fake sendmail" if $? != 0;
+
+# Require late, because MIME::Lite checks for a sendmail binary in the
+# compile phase.
+require MIME::Lite;
 
 my $tfsm = Test::FakeSendmail->new;
 
+my $sender = 'MIME::Lite';
 my $msg = MIME::Lite->new
     (
      From => 'me',
@@ -27,11 +31,7 @@ my $msg = MIME::Lite->new
 $msg->send('sendmail');
 
 my @mails = $tfsm->mails;
-is @mails, 1, "Got one mail through sender '$sender'"
-    or do {
-	my $content = `"$fake_sendmail_path" --tfsm-queue`;
-	diag $content;
-    };
+is @mails, 1, "Got one mail through sender '$sender'";
 
 like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
 
