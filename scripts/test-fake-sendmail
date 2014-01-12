@@ -23,6 +23,7 @@ my $env_var = 'PERL_TEST_FAKESENDMAIL_DIRECTORY';
 
 my $mail_directory; # this line may be replaced!
 
+my @orig_ARGV = @ARGV;
 my $dummy;
 my $show_queue;
 GetOptions(
@@ -35,7 +36,10 @@ GetOptions(
 	   },
 	   "tfsm-queue" => \$show_queue,
 	  )
-    or die "ERROR: unhandled test-fake-sendmail option";
+    or die <<EOF;
+ERROR: unhandled test-fake-sendmail option
+       Command line was: $0 @orig_ARGV
+EOF
 
 if (!defined $mail_directory) {
     if (!$ENV{$env_var}) {
