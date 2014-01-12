@@ -26,7 +26,10 @@ my $mail_directory; # this line may be replaced!
 my @orig_ARGV = @ARGV;
 my $dummy;
 my $show_queue;
+Getopt::Long::Configure("bundling");
+Getopt::Long::Configure("bundling_override");
 GetOptions(
+	   "f=s" => \$dummy,
 	   "t" => \$dummy,
 	   "oi" => \$dummy,
 	   "oem" => \$dummy,

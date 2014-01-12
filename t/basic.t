@@ -49,7 +49,7 @@ for my $mode ('env', 'fixed_dir') {
 
 
 	    if ($sender eq 'direct_sendmail') {
-		open my $fh, "|-", $fake_sendmail_path, "-t", "-oi", "-oem" or die $!;
+		open my $fh, "|-", $fake_sendmail_path, "-t", "-oi", "-oem", "-fme" or die $!;
 		print $fh <<EOF;
 From: me
 To: somebody
@@ -66,7 +66,7 @@ EOF
 		     Subject => 'Hello',
 		     Data => "Body\n",
 		    );
-		$msg->send('sendmail', "$fake_sendmail_path -t -oi -oem");
+		$msg->send('sendmail', "$fake_sendmail_path -t -oi -oem -fme");
 	    } else {
 		die "No support for sender '$sender'";
 	    }
