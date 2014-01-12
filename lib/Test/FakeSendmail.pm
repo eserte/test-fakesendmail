@@ -101,7 +101,7 @@ sub install {
     if ($opts{path}) {
 	$destination = delete $opts{path};
     } elsif (delete $opts{tmp}) {
-	my($tmpfh,$tmpfile) = tempfile(SUFFIX => "_test_fake_sendmail", UNLINK => 1)
+	my($tmpfh,$tmpfile) = tempfile(SUFFIX => "_test_fake_sendmail" . ($^O eq 'MSWin32' ? '.bat' : ''), UNLINK => 1)
 	    or die "Can't create temporary file: $!";
 	close $tmpfh; # to prevent "text file busy" errors
 	$destination = $tmpfile;
@@ -112,8 +112,10 @@ sub install {
 
     my $test_fake_sendmail_script;
     # Are we in test (blib) mode?
-    if ($INC{"Test/FakeSendmail.pm"} =~ m{(.*/blib)/lib/}) { # XXX use file::spec?
-	$test_fake_sendmail_script = "$1/script/test-fake-sendmail";
+    my @inc_dirs = File::Spec->splitdir($INC{"Test/FakeSendmail.pm"});
+    if (@inc_dirs >= 4 && $inc_dirs[-4] eq 'blib' && $inc_dirs[-3] eq 'lib') {
+	$test_fake_sendmail_script = File::Spec->catdir(@inc_dirs[0..$#inc_dirs-3], 'script', 'test-fake-sendmail');
+	_maybe_batify($test_fake_sendmail_script);
 	if (!-x $test_fake_sendmail_script) { # XXX is this also valid for MSWin32?
 	    undef $test_fake_sendmail_script;
 	}
@@ -121,6 +123,7 @@ sub install {
     if (!$test_fake_sendmail_script) {
 	require Config;
 	$test_fake_sendmail_script = File::Spec->catfile($Config::Config{sitebin}, 'test-fake-sendmail');
+	_maybe_batify($test_fake_sendmail_script);
     }
     if (!-x $test_fake_sendmail_script) {
 	die "Cannot find executable $test_fake_sendmail_script";
@@ -160,6 +163,11 @@ sub install {
     $destination;
 }
 
+sub _maybe_batify {
+    if ($^O eq 'MSWin32') {
+	$_[0] .= ".bat";
+    }
+}
 
 1;
 
