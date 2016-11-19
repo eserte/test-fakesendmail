@@ -1,12 +1,19 @@
 language: perl
 perl:
+  - "5.22"
+  - "5.20"
   - "5.18"
   - "5.16"
   - "5.14"
   - "5.12"
   - "5.10"
   - "5.8"
+
 before_install:
   - cpanm --quiet --notest MIME::Parser MIME::Lite
 before_script:
   - (cd t && ln -s ../xt/travis-ci.t travis-ci.t)
+
+branches:
+ except:
+  - /appveyor/
