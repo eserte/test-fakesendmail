@@ -11,6 +11,9 @@ use Test::More 'no_plan';
 use Test::FakeSendmail;
 use MIME::Parser;
 
+die "This test script should only be run on travis-ci systems.\n"
+    if !$ENV{TRAVIS};
+
 system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->install");
 die "Cannot install fake sendmail" if $? != 0;
 
