@@ -14,7 +14,7 @@ use MIME::Parser;
 die "This test script should only be run on travis-ci systems.\n"
     if !$ENV{TRAVIS};
 
-system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->install");
+system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->replace_system_sendmail");
 die "Cannot install fake sendmail" if $? != 0;
 
 # Require late, because MIME::Lite checks for a sendmail binary in the
@@ -48,6 +48,13 @@ is _get_header($mail, 'Subject'), 'Hello';
 is $mail->body_as_string, "Body\n";
 
 $tfsm->clean;
+
+# Check error modes
+eval { Test::FakeSendmail->replace_system_sendmail(tmp => 1) };
+like $@, qr{Don't use the option 'tmp'}, 'tmp not allowed with replace_system_sendmail';
+
+eval { Test::FakeSendmail->install };
+like $@, qr{Either the option 'path' or 'tmp' is mandatory}, 'path or tmp required with install';
 
 sub _get_header {
     my($mail, $key) = @_;

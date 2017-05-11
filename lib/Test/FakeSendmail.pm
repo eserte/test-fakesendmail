@@ -3,7 +3,7 @@
 #
 # Author: Slaven Rezic
 #
-# Copyright (C) 2014 Slaven Rezic. All rights reserved.
+# Copyright (C) 2014,2017 Slaven Rezic. All rights reserved.
 # This package is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 #
@@ -95,9 +95,25 @@ sub clean {
 }
 
 sub install {
+    my($class, %opts) = @_;
+    if (!$opts{path} && !$opts{tmp}) {
+	die "Either the option 'path' or 'tmp' is mandatory --- or use replace_system_sendmail instead.\n";
+    }
+    $class->_install(%opts);
+}
+
+sub replace_system_sendmail {
+    my($class, %opts) = @_;
+    if ($opts{tmp}) {
+	die "Don't use the option 'tmp' --- or use the install function instead.\n";
+    }
+    $class->_install(%opts);
+}
+
+sub _install {
     my(undef, %opts) = @_;
 
-    my $destination = "/usr/sbin/sendmail"; # XXX get best destination per OS, could be /usr/lib/sendmail
+    my $destination;
     if ($opts{path}) {
 	$destination = delete $opts{path};
     } elsif (delete $opts{tmp}) {
@@ -105,7 +121,10 @@ sub install {
 	    or die "Can't create temporary file: $!";
 	close $tmpfh; # to prevent "text file busy" errors
 	$destination = $tmpfile;
+    } else {
+	$destination = "/usr/sbin/sendmail"; # XXX get best destination per OS, could be /usr/lib/sendmail
     }
+
     my $maildirectory = delete $opts{maildirectory};
 
     die "Unhandled options: " . join(" ", %opts) if %opts;
