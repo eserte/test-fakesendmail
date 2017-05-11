@@ -11,7 +11,7 @@ use Test::More;
 use File::Temp qw(tempdir);
 use Test::FakeSendmail;
 
-my $tests_per_sender = 9;
+my $tests_per_sender = 11;
 
 plan tests => 2 * (3 + $tests_per_sender*2);
 
@@ -47,6 +47,13 @@ for my $mode ('env', 'fixed_dir') {
 		if ($sender eq 'direct_sendmail' && $^O eq 'MSWin32');
 
 	    my $tfsm = Test::FakeSendmail->new(defined $maildirectory ? (maildirectory => $maildirectory) : ());
+	    if ($mode eq 'env') {
+		ok $ENV{PERL_TEST_FAKESENDMAIL_DIRECTORY}, 'PERL_TEST_FAKESENDMAIL_DIRECTORY env var is set';
+		ok -d $ENV{PERL_TEST_FAKESENDMAIL_DIRECTORY}, '... and points to a directory';
+	    } else {
+		ok !$ENV{PERL_TEST_FAKESENDMAIL_DIRECTORY}, 'PERL_TEST_FAKESENDMAIL_DIRECTORY env var is not set';
+		pass '... and no point in checking non-existing contents';
+	    }
 	    isa_ok $tfsm, 'Test::FakeSendmail';
 
 
