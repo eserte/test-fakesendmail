@@ -43,8 +43,8 @@ for my $mode ('env', 'fixed_dir') {
     SKIP: {
 	    skip "MIME::Lite not available", $tests_per_sender
 		if ($sender eq 'MIME::Lite' && !eval { require MIME::Lite; 1 });
-	    skip "list form of pipe open not implemented", $tests_per_sender
-		if ($sender eq 'direct_sendmail' && $^O eq 'MSWin32');
+	    skip "list form of pipe open not implemented for perl < 5.22.0 on Windows", $tests_per_sender
+		if ($sender eq 'direct_sendmail' && $^O eq 'MSWin32' && $] < 5.022);
 
 	    my $tfsm = Test::FakeSendmail->new(defined $maildirectory ? (maildirectory => $maildirectory) : ());
 	    if ($mode eq 'env') {
