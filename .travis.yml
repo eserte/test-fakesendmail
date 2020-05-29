@@ -9,6 +9,7 @@ matrix:
       dist: trusty
     - perl: "5.20"
       dist: trusty
+      env: WITHOUT_DEPS=1
     - perl: "5.18"
       dist: trusty
     - perl: "5.16"
@@ -23,7 +24,7 @@ matrix:
       dist: precise
 
 before_install:
-  - cpanm --quiet --notest MIME::Parser MIME::Lite
+  - '[ "$WITHOUT_DEPS" = "" ] && cpanm --quiet --notest MIME::Parser MIME::Lite || true'
 before_script:
   - (cd t && ln -s ../xt/travis-ci.t travis-ci.t)
 
