@@ -38,7 +38,7 @@ matrix:
 #      dist: precise
 
 before_install:
- - '[ "$WITHOUT_DEPS" = "" ] && cpanm --quiet --notest MIME::Parser MIME::Lite || true'
+ - '[ "$WITHOUT_DEPS" = "" ] && cpanm --quiet --notest MIME::Parser MIME::Lite Email::Sender || true'
 before_script:
  - (cd t && ln -s ../xt/travis-ci.t travis-ci.t)
 
