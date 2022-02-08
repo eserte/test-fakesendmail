@@ -113,7 +113,7 @@ EOF
 
 	    like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
 	    if ($sender eq 'Email::Sender') {
-		is $mails[0]->argv, '-i -f me -- somebody';
+		like $mails[0]->argv, qr{^-i -f me (-- )?somebody$};
 	    } else {
 		is $mails[0]->argv, '-t -oi -oem -fme';
 	    }
