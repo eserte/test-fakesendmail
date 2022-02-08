@@ -4,7 +4,7 @@
 #
 # Author: Slaven Rezic
 #
-# Copyright (C) 2014 Slaven Rezic. All rights reserved.
+# Copyright (C) 2014,2022 Slaven Rezic. All rights reserved.
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 #
@@ -31,6 +31,7 @@ Getopt::Long::Configure("bundling_override");
 GetOptions(
 	   "f=s" => \$dummy,
 	   "t" => \$dummy,
+	   "i" => \$dummy,
 	   "oi" => \$dummy,
 	   "oem" => \$dummy,
 	   "tfsm-info" => sub {

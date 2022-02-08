@@ -12,8 +12,9 @@ use File::Temp qw(tempdir);
 use Test::FakeSendmail;
 
 my $tests_per_sender = 11;
+my @senders = ('direct_sendmail', 'MIME::Lite', 'Email::Sender');
 
-plan tests => 2 * (3 + $tests_per_sender*2);
+plan tests => 2 * (3 + $tests_per_sender*@senders);
 
 for my $mode ('env', 'fixed_dir') {
     delete $ENV{PERL_TEST_FAKESENDMAIL_DIRECTORY};
@@ -39,10 +40,12 @@ for my $mode ('env', 'fixed_dir') {
     cmp_ok -s $fake_sendmail_path, ">", 0;
     like $info, qr{test-fake-sendmail\s+\d+\.\d+}, 'seen version';
 
-    for my $sender ('direct_sendmail', 'MIME::Lite') {
+    for my $sender (@senders) {
     SKIP: {
-	    skip "MIME::Lite not available", $tests_per_sender
-		if ($sender eq 'MIME::Lite' && !eval { require MIME::Lite; 1 });
+	    skip "$sender not available", $tests_per_sender
+		if ($sender =~ m{^(MIME::Lite|Email::Sender)$} && !eval qq{ require $sender; 1 });
+	    skip "Email::Simple not available", $tests_per_sender
+		if ($sender eq 'Email::Sender' && !eval q{ require Email::Simple; 1 }); # actually this is a dep of Email::Sender, so usually installed
 	    skip "list form of pipe open not implemented for perl < 5.22.0 on Windows", $tests_per_sender
 		if ($sender eq 'direct_sendmail' && $^O eq 'MSWin32' && $] < 5.022);
 
@@ -76,6 +79,27 @@ EOF
 		     Data => "Body\n",
 		    );
 		$msg->send('sendmail', "$fake_sendmail_path -t -oi -oem -fme");
+	    } elsif ($sender eq 'Email::Sender') {
+		my $message = Email::Simple->create
+		    (
+		     header => [
+				From => 'me',
+				To => 'somebody',
+				Subject => 'Hello',
+			       ],
+		     body => "Body\n",
+		    );
+		require Email::Sender::Simple;
+		require Email::Sender::Transport::Sendmail;
+		Email::Sender::Simple->send
+			(
+			 $message,
+			 {
+			  transport => Email::Sender::Transport::Sendmail->new({ sendmail => $fake_sendmail_path }),
+			  to        => scalar $message->header('to'), # XXX automatic get does not work
+			  from      => scalar $message->header('from'), # XXX automatic get does not work
+			 }
+			);
 	    } else {
 		die "No support for sender '$sender'";
 	    }
@@ -88,7 +112,11 @@ EOF
 		};
 
 	    like $mails[0]->received, qr{^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$}, 'received info field looks like an ISO date';
-	    is $mails[0]->argv, '-t -oi -oem -fme';
+	    if ($sender eq 'Email::Sender') {
+		is $mails[0]->argv, '-i -f me -- somebody';
+	    } else {
+		is $mails[0]->argv, '-t -oi -oem -fme';
+	    }
 
 	SKIP: {
 		skip "No MIME::Parser available", 5
