@@ -17,6 +17,8 @@ BEGIN {
 
 die "This test script should only be run on travis-ci systems.\n"
     if !$ENV{TRAVIS};
+die "This test script should not run if sendmail is already installed.\n"
+    if -e "/usr/sbin/sendmail" || -e "/usr/lib/sendmail";
 
 
 system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->replace_system_sendmail");
