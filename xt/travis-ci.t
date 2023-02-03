@@ -15,8 +15,8 @@ BEGIN {
     }
 }
 
-die "This test script should only be run on travis-ci systems.\n"
-    if !$ENV{TRAVIS};
+die "This test script should only be run on CI systems (github workflows or travis-ci).\n"
+    if !$ENV{TRAVIS} && !$ENV{GITHUB_ACTIONS};
 die "This test script should not run if sendmail is already installed.\n"
     if -e "/usr/sbin/sendmail" || -e "/usr/lib/sendmail";
 
