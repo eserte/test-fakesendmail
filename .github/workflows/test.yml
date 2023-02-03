@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - '*travis*'
+      - '*appveyor*'
+      - '*doozer*'
+  pull_request:
+
+jobs:
+
+  test_on_host:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+     matrix:
+       include:
+         - os: 'ubuntu-20.04'
+         - os: 'ubuntu-22.04'
+    steps:
+    - name: apt hacks
+      # /etc/apt/sources.list should be sufficient; all the other repositories are possibly problematic
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/*.list
+        sudo apt-get update -qq
+    - uses: actions/checkout@v3
+
+    - name: Deinstall sendmail
+      run: |
+        set -ex
+        if which sendmail >/dev/null 2>&1
+        then
+          package=$(dpkg -S $(which sendmail) | sed 's/:.*//')
+          if [ "$package" != "" ]
+          then
+            apt-get remove -y $package
+          else
+            echo "::warning::sendmail installed, but cannot find a matching package"
+          fi
+        else
+          echo "::notice::sendmail does not need to be deinstalled"
+        fi
+
+    - name: Install cpanminus
+      run: |
+        set -e
+        sudo apt-get install -q --no-install-recommends -y cpanminus
+
+    - name: "Install optional dependencies"
+      run: |
+        set -e
+        cpanm --sudo --quiet --notest MIME::Parser MIME::Lite Email::Sender || ( cat /github/home/.cpanm/work/*/build.log; false )
+
+    - name: "perl dependency installation"
+      run: |
+        set -e
+        cpanm --sudo --quiet --installdeps --notest . || ( cat /github/home/.cpanm/work/*/build.log; false )
+
+    - name: "Build and test"
+      run: |
+        set -e
+        (cd t && ln -s ../xt/travis-ci.t travis-ci.t)
+        perl Makefile.PL
+        HARNESS_TIMER=1 HARNESS_OPTIONS=j4:c make test
+
+  test_in_container:
+    name: "Test with perl ${{ matrix.perlimage }} (without deps: ${{ matrix.without_deps||'false' }})"
+    runs-on: ubuntu-latest
+    container: perl:${{ matrix.perlimage }}
+    strategy:
+      matrix:
+        include:
+          ## Dependency Email::Sender requires 5.12
+          - perlimage: 5.8.9-threaded-stretch
+            without_deps: true
+          - perlimage: 5.10.1-buster
+            without_deps: true
+          - perlimage: 5.12.5-stretch
+          - perlimage: 5.14.4-stretch
+          - perlimage: 5.16.3-buster
+          - perlimage: 5.18.4-buster
+          - perlimage: 5.22.4-stretch
+            without_deps: true
+          - perlimage: 5.36.0-slim-bullseye
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        set -e
+        apt-get update -qq
+        apt-get install -q --no-install-recommends -y build-essential
+        cpanm --quiet --installdeps --notest . || ( cat /github/home/.cpanm/work/*/build.log; false )
+    - name: "Install optional dependencies (without deps: ${{ matrix.without_deps||'false' }})"
+      run: |
+        set -e
+        cpanm --quiet --notest MIME::Parser MIME::Lite Email::Sender || ( cat /github/home/.cpanm/work/*/build.log; false )
+      if: "${{ ! matrix.without_deps }}"
+    - name: Build and test
+      run: |
+        set -e
+        (cd t && ln -s ../xt/travis-ci.t travis-ci.t)
+        perl Makefile.PL
+        HARNESS_TIMER=1 HARNESS_OPTIONS=j4:c make test
