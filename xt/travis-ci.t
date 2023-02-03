@@ -20,8 +20,11 @@ die "This test script should only be run on CI systems (github workflows or trav
 die "This test script should not run if sendmail is already installed.\n"
     if -e "/usr/sbin/sendmail" || -e "/usr/lib/sendmail";
 
-
-system("sudo", $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->replace_system_sendmail");
+my @sudo;
+if ($> != 0) {
+    @sudo = ('sudo');
+}
+system(@sudo, $^X, "-Mblib", "-MTest::FakeSendmail", "-e", "Test::FakeSendmail->replace_system_sendmail");
 die "Cannot install fake sendmail" if $? != 0;
 
 # Require late, because MIME::Lite checks for a sendmail binary in the
