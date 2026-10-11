@@ -28,6 +28,12 @@ jobs:
         sudo apt-get update -qq
     - uses: taiki-e/checkout-action@v1
 
+    - name: Install libcrypt-dev on ubuntu 26.04 and newer
+      run: |
+        if [ ! -f /usr/include/crypt.h ]; then
+          sudo apt-get install -y libcrypt-dev
+        fi
+
     - name: Deinstall sendmail
       run: |
         set -ex
